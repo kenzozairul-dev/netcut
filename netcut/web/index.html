@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NetCut — Home Network Monitor</title>
+<style>
+  :root {
+    --bg: #0b0f14;
+    --panel: #121821;
+    --panel-2: #182231;
+    --line: #24303f;
+    --text: #e6edf6;
+    --muted: #8b9bb0;
+    --accent: #35d0a5;
+    --warn: #f2b544;
+    --danger: #ef5f6b;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: radial-gradient(1200px 600px at 15% -10%, #16222f 0%, var(--bg) 55%);
+    color: var(--text);
+    font: 15px/1.5 "Segoe UI", system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+  }
+  header {
+    padding: 22px 28px 18px;
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+  }
+  h1 { font-size: 20px; margin: 0; letter-spacing: .2px; }
+  h1 span { color: var(--accent); }
+  .sub { color: var(--muted); font-size: 13px; }
+  .grow { flex: 1; }
+  main { padding: 24px 28px 60px; max-width: 1280px; margin: 0 auto; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 24px; }
+  .card {
+    background: linear-gradient(180deg, var(--panel-2), var(--panel));
+    border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px;
+  }
+  .card .k { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .8px; }
+  .card .v { font-size: 26px; font-weight: 600; margin-top: 6px; font-variant-numeric: tabular-nums; }
+  .card .v.ok { color: var(--accent); }
+  .card .v.warn { color: var(--warn); }
+  .card .v.bad { color: var(--danger); }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; margin-bottom: 22px; }
+  .panel h2 { font-size: 14px; margin: 0; padding: 14px 18px; border-bottom: 1px solid var(--line); color: var(--muted); text-transform: uppercase; letter-spacing: .9px; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; padding: 11px 18px; color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .6px; border-bottom: 1px solid var(--line); }
+  td { padding: 11px 18px; border-bottom: 1px solid #1b2530; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #151d27; }
+  .mono { font-family: "Cascadia Mono", Consolas, monospace; font-size: 13px; }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: 11px; font-weight: 600; letter-spacing: .4px; text-transform: uppercase; }
+  .pill.up { background: rgba(53,208,165,.13); color: var(--accent); }
+  .pill.down { background: rgba(139,155,176,.12); color: var(--muted); }
+  .pill.allow { background: rgba(53,208,165,.13); color: var(--accent); }
+  .pill.throttle { background: rgba(242,181,68,.14); color: var(--warn); }
+  .pill.block, .pill.quarantine { background: rgba(239,95,107,.14); color: var(--danger); }
+  button {
+    background: var(--panel-2); color: var(--text); border: 1px solid var(--line);
+    padding: 7px 13px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 500;
+    transition: border-color .15s, background .15s;
+  }
+  button:hover { border-color: #35465b; background: #1d2837; }
+  button.primary { background: rgba(53,208,165,.15); border-color: rgba(53,208,165,.4); color: var(--accent); }
+  button.danger { background: rgba(239,95,107,.12); border-color: rgba(239,95,107,.35); color: var(--danger); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .events { max-height: 320px; overflow: auto; }
+  .event { padding: 10px 18px; border-bottom: 1px solid #1b2530; font-size: 13px; display: flex; gap: 12px; }
+  .event time { color: var(--muted); font-family: Consolas, monospace; font-size: 12px; white-space: nowrap; }
+  .empty { padding: 34px 18px; text-align: center; color: var(--muted); }
+  .toggle { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--muted); }
+  input[type=number] {
+    background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
+    padding: 6px 10px; border-radius: 8px; width: 90px; font-size: 13px;
+  }
+  .banner { padding: 10px 18px; font-size: 13px; background: rgba(242,181,68,.1); color: var(--warn); border-bottom: 1px solid var(--line); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Net<span>Cut</span></h1>
+  <div class="sub" id="netinfo">—</div>
+  <div class="grow"></div>
+  <div class="row">
+    <button id="btn-scan" class="primary">Scan now</button>
+    <button id="btn-export">Export JSON</button>
+  </div>
+</header>
+
+<main>
+  <div class="cards">
+    <div class="card"><div class="k">Devices</div><div class="v" id="c-total">–</div></div>
+    <div class="card"><div class="k">Online</div><div class="v ok" id="c-up">–</div></div>
+    <div class="card"><div class="k">Untrusted</div><div class="v warn" id="c-untrusted">–</div></div>
+    <div class="card"><div class="k">Blocked</div><div class="v bad" id="c-blocked">–</div></div>
+    <div class="card"><div class="k">Last scan</div><div class="v" id="c-scan" style="font-size:15px">–</div></div>
+  </div>
+
+  <div class="panel">
+    <h2>Policy</h2>
+    <div style="padding:16px 18px">
+      <div class="row" style="margin-bottom:14px">
+        <label class="toggle"><input type="checkbox" id="guest"> Guest mode (throttle untrusted)</label>
+        <label class="toggle"><input type="checkbox" id="alertnew"> Alert on new device</label>
+        <label class="toggle">Scan interval <input type="number" id="interval" min="10" max="3600"> s</label>
+        <button id="btn-save-policy">Save policy</button>
+      </div>
+      <div class="sub" id="policy-note">Allowlist kosong = semua peranti dibenarkan. Tambah MAC ke allowlist untuk mod “hanya peranti dibenarkan”.</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Devices</h2>
+    <div id="device-banner"></div>
+    <table>
+      <thead>
+        <tr>
+          <th>IP</th><th>MAC</th><th>Hostname</th><th>Vendor</th><th>State</th><th>Policy</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="devices"></tbody>
+    </table>
+    <div id="devices-empty" class="empty" hidden>Belum ada peranti. Tekan “Scan now”.</div>
+  </div>
+
+  <div class="panel">
+    <h2>Recent events</h2>
+    <div class="events" id="events"></div>
+    <div id="events-empty" class="empty" hidden>Tiada peristiwa.</div>
+  </div>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let state = { devices: [], verdicts: [], policy: {} };
+
+function fmtTime(ts) {
+  if (!ts) return "–";
+  return new Date(ts * 1000).toLocaleTimeString();
+}
+
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+async function api(path, opts) {
+  const res = await fetch(path, opts);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+async function refresh() {
+  const [dev, ev, pol, health] = await Promise.all([
+    api("/api/devices"), api("/api/events?limit=80"), api("/api/policy"), api("/api/health")
+  ]);
+  state.devices = dev.devices;
+  state.verdicts = dev.policy.verdicts;
+  state.policy = pol;
+
+  $("netinfo").textContent = health.subnet
+    ? `${health.subnet} · gateway ${health.gateway || "?"} · monitor ${health.monitor_running ? "active" : "stopped"}`
+    : "mengesan rangkaian…";
+
+  $("c-total").textContent = dev.devices.length;
+  $("c-up").textContent = dev.devices.filter(d => d.state === "up").length;
+  $("c-untrusted").textContent = dev.devices.filter(d => !d.trusted).length;
+  $("c-blocked").textContent = dev.devices.filter(d => d.blocked).length;
+  $("c-scan").textContent = fmtTime(health.last_scan);
+
+  $("guest").checked = !!pol.guest_mode;
+  $("alertnew").checked = !!pol.alert_on_new_device;
+  $("interval").value = pol.scan_interval_seconds;
+
+  const vmap = Object.fromEntries(state.verdicts.map(v => [v.mac, v]));
+  const tbody = $("devices");
+  tbody.innerHTML = "";
+  $("devices-empty").hidden = state.devices.length > 0;
+  for (const d of state.devices) {
+    const v = vmap[d.mac] || { action: "allow", reason: "" };
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="mono">${esc(d.ip)}</td>
+      <td class="mono">${esc(d.mac)}</td>
+      <td>${esc(d.hostname || "—")}</td>
+      <td>${esc(d.vendor || "—")}</td>
+      <td><span class="pill ${d.state}">${d.state}</span></td>
+      <td><span class="pill ${v.action}" title="${esc(v.reason)}">${v.action}</span></td>
+      <td></td>`;
+    const actions = tr.lastElementChild;
+    const bTrust = document.createElement("button");
+    bTrust.textContent = d.trusted ? "Untrust" : "Trust";
+    bTrust.onclick = () => mutate(`/api/devices/${d.mac}/trust`, { trusted: !d.trusted });
+    const bBlock = document.createElement("button");
+    bBlock.className = d.blocked ? "" : "danger";
+    bBlock.textContent = d.blocked ? "Unblock" : "Block";
+    bBlock.onclick = () => mutate(`/api/devices/${d.mac}/block`, { blocked: !d.blocked });
+    actions.append(bTrust, bBlock);
+    tbody.appendChild(tr);
+  }
+
+  const evBox = $("events");
+  evBox.innerHTML = "";
+  $("events-empty").hidden = ev.events.length > 0;
+  for (const e of ev.events) {
+    const div = document.createElement("div");
+    div.className = "event";
+    div.innerHTML = `<time>${fmtTime(e.ts)}</time><span>${esc(e.message)}</span>`;
+    evBox.appendChild(div);
+  }
+
+  if (health.last_error) {
+    $("device-banner").innerHTML = `<div class="banner">Scan error: ${esc(health.last_error)}</div>`;
+  } else {
+    $("device-banner").innerHTML = "";
+  }
+}
+
+async function mutate(path, body) {
+  await api(path, { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body) });
+  refresh();
+}
+
+$("btn-scan").onclick = async () => {
+  const b = $("btn-scan");
+  b.disabled = true; b.textContent = "Scanning…";
+  try { await api("/api/scan", { method: "POST" }); await refresh(); }
+  finally { b.disabled = false; b.textContent = "Scan now"; }
+};
+
+$("btn-export").onclick = async () => {
+  const data = await api("/api/export");
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `netcut-export-${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+};
+
+$("btn-save-policy").onclick = async () => {
+  await api("/api/policy", {
+    method: "PUT",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      guest_mode: $("guest").checked,
+      alert_on_new_device: $("alertnew").checked,
+      scan_interval_seconds: parseInt($("interval").value, 10) || 60,
+    })
+  });
+  refresh();
+};
+
+refresh();
+setInterval(refresh, 10000);
+</script>
+</body>
+</html>

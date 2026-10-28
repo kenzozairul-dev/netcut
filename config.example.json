@@ -1,0 +1,11 @@
+{
+  "subnet": null,
+  "gateway": null,
+  "scan_interval_seconds": 60,
+  "ping_timeout_ms": 700,
+  "ping_concurrency": 64,
+  "allowlist": [],
+  "blocklist": [],
+  "alert_on_new_device": true,
+  "guest_mode": false
+}

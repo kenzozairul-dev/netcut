@@ -1,0 +1,22 @@
+[project]
+name = "netcut"
+version = "0.1.0"
+description = "Home LAN inventory, monitoring and policy dashboard"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+]
+
+[project.scripts]
+netcut = "netcut.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["netcut*"]
+
+[tool.setuptools.package-data]
+netcut = ["web/*.html"]
