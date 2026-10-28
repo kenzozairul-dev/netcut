@@ -1,0 +1,17 @@
+{
+  "name": "netcut",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Home LAN inventory, monitoring and policy dashboard",
+  "scripts": {
+    "dev": "python -m netcut.cli serve --reload --host 127.0.0.1 --port 8088",
+    "start": "python -m netcut.cli serve --host 127.0.0.1 --port 8088",
+    "scan": "python -m netcut.cli scan",
+    "scan:json": "python -m netcut.cli scan --json",
+    "test": "python -m pytest tests -q",
+    "install:deps": "python -m pip install -e . && python -m pip install pytest httpx"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -36,6 +36,26 @@ Copy-Item config.example.json config.json
 
 ## Penggunaan
 
+### `npm run dev` (cara pantas)
+
+```powershell
+npm install          # sekali sahaja (tiada dependency, hanya daftar script)
+npm run dev          # dashboard dengan auto-reload di http://127.0.0.1:8088
+```
+
+Script lain:
+
+| Arahan | Fungsi |
+|---|---|
+| `npm run dev` | Serve dashboard + auto-reload bila fail berubah |
+| `npm start` | Serve tanpa reload |
+| `npm run scan` | Scan sekali, cetak jadual |
+| `npm run scan:json` | Scan sekali, output JSON |
+| `npm test` | Jalankan ujian pytest |
+| `npm run install:deps` | Pasang pakej Python yang diperlukan |
+
+> `npm run dev` memerlukan pakej Python sudah dipasang (`npm run install:deps`).
+
 ### Scan sekali (CLI)
 
 ```powershell
